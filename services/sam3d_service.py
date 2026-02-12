@@ -68,14 +68,14 @@ class SAM3DService:
 
             # Step 2: Call SAM 3D Objects API (try with low detection threshold first)
             result = await self._call_fal_api(
-                fal_client, image_url, prompt, seed, detection_threshold=0.15
+                fal_client, image_url, prompt, seed, detection_threshold=0.1
             )
 
             # If auto-segmentation fails, retry without prompt (use whole image)
             if result is None:
                 logger.warning("Auto-segmentation failed, retrying without prompt...")
                 result = await self._call_fal_api(
-                    fal_client, image_url, None, seed, detection_threshold=0.05
+                    fal_client, image_url, None, seed, detection_threshold=0.1
                 )
 
             if result is None:
