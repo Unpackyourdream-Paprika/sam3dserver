@@ -66,20 +66,24 @@ class SAM3DService:
             image_url = await asyncio.to_thread(fal_client.upload_file, image_path)
             logger.info(f"Image uploaded to fal.ai: {image_url}")
 
-            # Step 2: Call SAM 3D Objects API
-            def _run_inference():
-                return fal_client.subscribe(
-                    self.FAL_ENDPOINT,
-                    arguments={
-                        "image_url": image_url,
-                        "prompt": prompt,
-                        "seed": seed,
-                        "export_textured_glb": True,
-                    },
-                    with_logs=True,
+            # Step 2: Call SAM 3D Objects API (try with low detection threshold first)
+            result = await self._call_fal_api(
+                fal_client, image_url, prompt, seed, detection_threshold=0.15
+            )
+
+            # If auto-segmentation fails, retry without prompt (use whole image)
+            if result is None:
+                logger.warning("Auto-segmentation failed, retrying without prompt...")
+                result = await self._call_fal_api(
+                    fal_client, image_url, None, seed, detection_threshold=0.05
                 )
 
-            result = await asyncio.to_thread(_run_inference)
+            if result is None:
+                return {
+                    "success": False,
+                    "error": "SAM 3D could not detect objects in this image. Try a different image with a clearer subject.",
+                }
+
             logger.info(f"SAM 3D API response keys: {list(result.keys())}")
 
             # Step 3: Extract GLB URL from response
@@ -117,6 +121,33 @@ class SAM3DService:
         except Exception as e:
             logger.error(f"SAM 3D conversion failed: {e}", exc_info=True)
             return {"success": False, "error": str(e)}
+
+    async def _call_fal_api(self, fal_client, image_url, prompt, seed, detection_threshold=0.15):
+        """Call fal.ai SAM 3D API with given parameters. Returns result dict or None on failure."""
+        try:
+            arguments = {
+                "image_url": image_url,
+                "seed": seed,
+                "export_textured_glb": True,
+                "detection_threshold": detection_threshold,
+            }
+            if prompt:
+                arguments["prompt"] = prompt
+
+            def _run():
+                return fal_client.subscribe(
+                    self.FAL_ENDPOINT,
+                    arguments=arguments,
+                    with_logs=True,
+                )
+
+            return await asyncio.to_thread(_run)
+        except Exception as e:
+            error_msg = str(e)
+            if "no masks" in error_msg.lower() or "Auto-segmentation" in error_msg:
+                logger.warning(f"SAM 3D segmentation failed: {error_msg}")
+                return None
+            raise
 
     def _extract_glb_url(self, result: dict) -> str | None:
         """Extract the best GLB URL from fal.ai response."""
