@@ -1,0 +1,24 @@
+# FastAPI and server
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+python-multipart==0.0.17
+
+# fal.ai API client (Meta SAM 3D)
+fal-client>=0.5.0
+httpx>=0.27.0
+
+# 3D processing
+trimesh>=4.5.3
+numpy>=1.26.4
+pillow>=11.0.0
+
+# 3D rendering (matplotlib fallback for headless environments)
+matplotlib>=3.9.0
+
+# Optional: pyrender for high-quality rendering (requires OpenGL)
+# pip install pyrender PyOpenGL
+# On headless Linux: pip install PyOpenGL-accelerate && export PYOPENGL_PLATFORM=egl
+
+# Utilities
+aiofiles==24.1.0
+python-dotenv==1.0.1

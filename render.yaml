@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: quel-stage-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: FAL_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: BASE_URL
+        sync: false  # Set to https://quel-stage-api.onrender.com
+      - key: LOG_LEVEL
+        value: INFO
+      - key: PYTHON_VERSION
+        value: "3.11.6"
